@@ -1,9 +1,9 @@
 {
-      "name": "tizen-tiktok-mod",
-        "version": "1.0.0",
-          "packageType": "mods",
-            "appName": "TikTok TV Mod",
-              "websiteURL": "https://www.tiktok.com/",
-                "main": "inject.js",
-                  "keys": ["37", "38", "39", "40", "13", "10009", "10252"]
-                  }
+  "name": "tizen-tiktok-tv",
+  "version": "1.2.0",
+  "packageType": "mods",
+  "appName": "TikTok TV",
+  "websiteURL": "https://www.tiktok.com/",
+  "main": "inject.js",
+  "keys": ["37", "38", "39", "40", "13", "10009"]
+}
