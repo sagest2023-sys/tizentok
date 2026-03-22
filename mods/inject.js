@@ -1,41 +1,93 @@
-// 1. Inject TV-friendly CSS
-const style = document.createElement('style');
-style.textContent = `
-    /* Hide the sidebar and top header to focus on the video */
-        [class*='DivSideNavContainer'], [class*='DivHeaderContainer'] { display: none !important; }
+(function() {
+    try {
+        // 1. CSS Injection using standard strings
+        var style = document.createElement('style');
+        style.innerHTML = "" +
+            ".tv-focus {" +
+            "  outline: 6px solid #ff0050 !important;" +
+            "  outline-offset: 2px;" +
+            "  background: rgba(255, 255, 255, 0.1) !important;" +
+            "  transform: scale(1.02);" +
+            "}" +
+            "[class*='DivHeaderContainer'], .download-guide { display: none !important; }" +
+            "[class*='DivSideNavContainer'] { width: 80px !important; }";
+        document.head.appendChild(style);
+
+        // 2. State variables (using var for Tizen 5.5 stability)
+        var currentZone = 'video'; 
+        var focusIndex = 0;
+
+        // Helper to get elements safely
+        var getElements = function() {
+            return {
+                sidebar: document.querySelectorAll("[data-e2e='nav-item']"),
+                video: [document.querySelector('video')],
+                actions: document.querySelectorAll("[data-e2e='like-icon'], [data-e2e='comment-icon']")
+            };
+        };
+
+        var updateFocus = function() {
+            var allFocused = document.querySelectorAll('.tv-focus');
+            for (var i = 0; i < allFocused.length; i++) {
+                allFocused[i].classList.remove('tv-focus');
+            }
             
-                /* Center the video feed and make it take full height */
-                    [class*='DivBodyContainer'] { padding: 0 !important; width: 100% !important; max-width: 100% !important; }
-                        [class*='DivMainContainer'] { margin-left: 0 !important; }
-                            
-                                /* Make the video container larger */
-                                    [class*='DivItemContainerV2'] { height: 100vh !important; }
-                                        
-                                            /* Hide annoying "Open App" popups */
-                                                [class*='DivAppBanner'], .download-guide { display: none !important; }
-                                                `;
-                                                document.head.append(style);
+            var zones = getElements();
+            var activeList = zones[currentZone];
+            
+            if (activeList && activeList[focusIndex]) {
+                activeList[focusIndex].classList.add('tv-focus');
+                if (typeof activeList[focusIndex].scrollIntoView === 'function') {
+                    activeList[focusIndex].scrollIntoView({ block: 'center' });
+                }
+            }
+        };
 
-                                                // 2. Handle TV Remote Buttons
-                                                window.addEventListener('keydown', (e) => {
-                                                    switch(e.keyCode) {
-                                                            case 13: // 'OK' Button - Toggle Like
-                                                                        const likeBtn = document.querySelector("[data-e2e='like-icon']");
-                                                                                    if (likeBtn) likeBtn.click();
-                                                                                                break;
-                                                                                                            
-                                                                                                                    case 10009: // 'Return' Button
-                                                                                                                                // If in a video, go back to home; if home, exit mod
-                                                                                                                                            window.history.back();
-                                                                                                                                                        break;
+        // 3. Key Handler
+        window.addEventListener('keydown', function(e) {
+            var zones = getElements();
+            var keyCode = e.keyCode;
 
-                                                                                                                                                                case 10252: // 'Play/Pause' Button
-                                                                                                                                                                            const video = document.querySelector('video');
-                                                                                                                                                                                        if (video) video.paused ? video.play() : video.pause();
-                                                                                                                                                                                                    break;
-                                                                                                                                                                                                                
-                                                                                                                                                                                                                        // Up/Down arrows are natively supported by TikTok Web for next/prev video
-                                                                                                                                                                                                                            }
-                                                                                                                                                                                                                            });
+            if (keyCode === 37) { // LEFT
+                if (currentZone === 'video') { currentZone = 'sidebar'; focusIndex = 0; }
+                else if (currentZone === 'actions') { currentZone = 'video'; focusIndex = 0; }
+            } 
+            else if (keyCode === 39) { // RIGHT
+                if (currentZone === 'video') { currentZone = 'actions'; focusIndex = 0; }
+                else if (currentZone === 'sidebar') { currentZone = 'video'; focusIndex = 0; }
+            } 
+            else if (keyCode === 38) { // UP
+                if (currentZone === 'video') {
+                    // Native Scroll Up
+                } else if (focusIndex > 0) {
+                    focusIndex--;
+                }
+            } 
+            else if (keyCode === 40) { // DOWN
+                if (currentZone === 'video') {
+                    // Native Scroll Down
+                } else if (focusIndex < zones[currentZone].length - 1) {
+                    focusIndex++;
+                }
+            } 
+            else if (keyCode === 13) { // OK
+                var el = zones[currentZone][focusIndex];
+                if (el) el.click();
+            } 
+            else if (keyCode === 10009) { // RETURN
+                if (currentZone !== 'video') {
+                    currentZone = 'video';
+                    e.preventDefault();
+                }
+            }
 
-                                                                                                                                                                                                                            console.log("TikTok TV Mod Loaded!");
+            updateFocus();
+        });
+
+        // Set initial focus after a delay to allow TikTok to load
+        setTimeout(updateFocus, 4000);
+
+    } catch (err) {
+        console.log("TikTok Mod Error: " + err.message);
+    }
+})();
