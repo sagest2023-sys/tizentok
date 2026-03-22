@@ -1,93 +1,39 @@
 (function() {
     try {
-        // 1. CSS Injection using standard strings
+        console.log("TizenTok: Initializing...");
+
+        // 1. Create CSS for TV (No backticks!)
         var style = document.createElement('style');
         style.innerHTML = "" +
-            ".tv-focus {" +
-            "  outline: 6px solid #ff0050 !important;" +
-            "  outline-offset: 2px;" +
-            "  background: rgba(255, 255, 255, 0.1) !important;" +
-            "  transform: scale(1.02);" +
-            "}" +
-            "[class*='DivHeaderContainer'], .download-guide { display: none !important; }" +
-            "[class*='DivSideNavContainer'] { width: 80px !important; }";
+            "/* Hide Desktop Bloat */ " +
+            "[class*='DivSideNavContainer'], [class*='DivHeaderContainer'], .download-guide { display: none !important; } " +
+            "[class*='DivMainContainer'] { margin-left: 0 !important; width: 100% !important; } " +
+            "/* TV Focus Indicator */ " +
+            ".tv-focus { outline: 8px solid #ff0050 !important; outline-offset: -8px; }";
         document.head.appendChild(style);
 
-        // 2. State variables (using var for Tizen 5.5 stability)
-        var currentZone = 'video'; 
-        var focusIndex = 0;
-
-        // Helper to get elements safely
-        var getElements = function() {
-            return {
-                sidebar: document.querySelectorAll("[data-e2e='nav-item']"),
-                video: [document.querySelector('video')],
-                actions: document.querySelectorAll("[data-e2e='like-icon'], [data-e2e='comment-icon']")
-            };
-        };
-
-        var updateFocus = function() {
-            var allFocused = document.querySelectorAll('.tv-focus');
-            for (var i = 0; i < allFocused.length; i++) {
-                allFocused[i].classList.remove('tv-focus');
-            }
-            
-            var zones = getElements();
-            var activeList = zones[currentZone];
-            
-            if (activeList && activeList[focusIndex]) {
-                activeList[focusIndex].classList.add('tv-focus');
-                if (typeof activeList[focusIndex].scrollIntoView === 'function') {
-                    activeList[focusIndex].scrollIntoView({ block: 'center' });
-                }
-            }
-        };
-
-        // 3. Key Handler
+        // 2. Navigation Logic
         window.addEventListener('keydown', function(e) {
-            var zones = getElements();
             var keyCode = e.keyCode;
-
-            if (keyCode === 37) { // LEFT
-                if (currentZone === 'video') { currentZone = 'sidebar'; focusIndex = 0; }
-                else if (currentZone === 'actions') { currentZone = 'video'; focusIndex = 0; }
+            
+            // Tizen 5.5 KeyCodes: 38 (Up), 40 (Down), 13 (Enter/OK)
+            if (keyCode === 40) { // DOWN -> Next Video
+                window.scrollBy(0, window.innerHeight);
+                e.preventDefault();
             } 
-            else if (keyCode === 39) { // RIGHT
-                if (currentZone === 'video') { currentZone = 'actions'; focusIndex = 0; }
-                else if (currentZone === 'sidebar') { currentZone = 'video'; focusIndex = 0; }
-            } 
-            else if (keyCode === 38) { // UP
-                if (currentZone === 'video') {
-                    // Native Scroll Up
-                } else if (focusIndex > 0) {
-                    focusIndex--;
-                }
-            } 
-            else if (keyCode === 40) { // DOWN
-                if (currentZone === 'video') {
-                    // Native Scroll Down
-                } else if (focusIndex < zones[currentZone].length - 1) {
-                    focusIndex++;
-                }
-            } 
-            else if (keyCode === 13) { // OK
-                var el = zones[currentZone][focusIndex];
-                if (el) el.click();
-            } 
-            else if (keyCode === 10009) { // RETURN
-                if (currentZone !== 'video') {
-                    currentZone = 'video';
-                    e.preventDefault();
-                }
+            else if (keyCode === 38) { // UP -> Prev Video
+                window.scrollBy(0, -window.innerHeight);
+                e.preventDefault();
             }
-
-            updateFocus();
+            else if (keyCode === 13) { // OK -> Like
+                var likeBtn = document.querySelector('[data-e2e="like-icon"]');
+                if (likeBtn) likeBtn.click();
+            }
         });
 
-        // Set initial focus after a delay to allow TikTok to load
-        setTimeout(updateFocus, 4000);
-
+        console.log("TizenTok: Loaded Successfully");
     } catch (err) {
-        console.log("TikTok Mod Error: " + err.message);
+        // This prevents the whole TV app from crashing if there's an error
+        console.error("TizenTok Error: " + err.message);
     }
 })();
